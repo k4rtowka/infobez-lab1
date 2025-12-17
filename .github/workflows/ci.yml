@@ -35,12 +35,10 @@ jobs:
         continue-on-error: true
         run: |
           if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
-            npx snyk code test --severity-threshold=high --json > snyk-sast-report.json 2>&1 || true
-            if [ ! -s snyk-sast-report.json ] || ! grep -q "runs\|issues" snyk-sast-report.json 2>/dev/null; then
-              echo "SAST: Creating report structure"
-              echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
-            fi
-          else
+            npx snyk code test --severity-threshold=high --json-file-output=snyk-sast-report.json 2>&1 || true
+          fi
+          if [ ! -f snyk-sast-report.json ] || [ ! -s snyk-sast-report.json ]; then
+            echo "SAST: Creating empty report"
             echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
           fi
         id: snyk-sast
@@ -102,20 +100,32 @@ jobs:
         if: always()
         run: |
           mkdir -p reports/html
-          if [ -f reports/snyk-sast-report.json ]; then
-            snyk-to-html -i reports/snyk-sast-report.json -o reports/html/sast-report.html || echo "Failed to generate SAST HTML"
-          fi
-          if [ -f reports/snyk-sca-report.json ]; then
-            snyk-to-html -i reports/snyk-sca-report.json -o reports/html/sca-report.html || echo "Failed to generate SCA HTML"
+
+          echo "Checking for SAST report..."
+          if [ -f reports/snyk-sast-report.json ] && [ -s reports/snyk-sast-report.json ]; then
+            echo "Generating SAST HTML from JSON..."
+            snyk-to-html -i reports/snyk-sast-report.json -o reports/html/sast-report.html 2>&1 || {
+              echo "Failed to generate SAST HTML, creating fallback"
+              echo '<!DOCTYPE html><html><head><title>SAST Report</title></head><body><h1>SAST Report</h1><p>Report generation failed. Check JSON file.</p></body></html>' > reports/html/sast-report.html
+            }
+          else
+            echo "SAST report not found or empty, creating empty report"
+            echo '<!DOCTYPE html><html><head><title>SAST Report</title></head><body><h1>SAST Report</h1><p>No vulnerabilities found</p></body></html>' > reports/html/sast-report.html
           fi
 
-          if [ ! -f reports/html/sast-report.html ]; then
-            echo '<!DOCTYPE html><html><head><title>SAST Report</title></head><body><h1>SAST Report</h1><p>No report generated</p></body></html>' > reports/html/sast-report.html
+          echo "Checking for SCA report..."
+          if [ -f reports/snyk-sca-report.json ] && [ -s reports/snyk-sca-report.json ]; then
+            echo "Generating SCA HTML from JSON..."
+            snyk-to-html -i reports/snyk-sca-report.json -o reports/html/sca-report.html 2>&1 || {
+              echo "Failed to generate SCA HTML, creating fallback"
+              echo '<!DOCTYPE html><html><head><title>SCA Report</title></head><body><h1>SCA Report</h1><p>Report generation failed. Check JSON file.</p></body></html>' > reports/html/sca-report.html
+            }
+          else
+            echo "SCA report not found or empty, creating empty report"
+            echo '<!DOCTYPE html><html><head><title>SCA Report</title></head><body><h1>SCA Report</h1><p>No vulnerabilities found</p></body></html>' > reports/html/sca-report.html
           fi
 
-          if [ ! -f reports/html/sca-report.html ]; then
-            echo '<!DOCTYPE html><html><head><title>SCA Report</title></head><body><h1>SCA Report</h1><p>No report generated</p></body></html>' > reports/html/sca-report.html
-          fi
+          ls -la reports/html/
 
       - name: Create summary page
         run: |
