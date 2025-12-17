@@ -35,21 +35,17 @@ jobs:
         continue-on-error: true
         run: |
           if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
-            npx snyk code test --severity-threshold=high --json-file-output=snyk-sast-report.json || true
+            npx snyk code test --severity-threshold=high --json > snyk-sast-report.json 2>&1 || true
+            if [ ! -s snyk-sast-report.json ] || ! grep -q "runs\|issues" snyk-sast-report.json 2>/dev/null; then
+              echo "SAST: Creating report structure"
+              echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
+            fi
+          else
+            echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
           fi
         id: snyk-sast
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Check and prepare SAST report
-        if: always()
-        run: |
-          if [ -f snyk-sast-report.json ]; then
-            echo "SAST report found"
-          else
-            echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
-            echo "Created empty SAST report"
-          fi
 
       - name: Run Snyk test for SCA
         continue-on-error: true
