@@ -5,8 +5,12 @@ const path = require('path');
 
 async function setupUsers() {
   try {
-    const adminPasswordEnv = process.env.ADMIN_PASSWORD || 'admin123';
-    const userPasswordEnv = process.env.USER_PASSWORD || 'user123';
+    const adminPasswordEnv = process.env.ADMIN_PASSWORD;
+    const userPasswordEnv = process.env.USER_PASSWORD;
+
+    if (!adminPasswordEnv || !userPasswordEnv) {
+      process.exit(1);
+    }
 
     const adminPassword = await bcrypt.hash(adminPasswordEnv, 10);
     const userPassword = await bcrypt.hash(userPasswordEnv, 10);
@@ -29,8 +33,8 @@ async function setupUsers() {
 
     console.log('Users setup completed!');
     console.log('Test credentials:');
-    console.log('  admin / admin123');
-    console.log('  user / user123');
+    console.log(`  admin / ${adminPasswordEnv}`);
+    console.log(`  user / ${userPasswordEnv}`);
   } catch (error) {
     console.error('Error setting up users:', error);
     process.exit(1);
