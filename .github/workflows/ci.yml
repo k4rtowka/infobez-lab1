@@ -36,54 +36,16 @@ jobs:
         run: |
           if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
             echo "Running Snyk code test..."
-            npx snyk code test --severity-threshold=high --json > snyk-sast-output.json 2>&1 || true
-            
-            if [ -f snyk-sast-output.json ] && [ -s snyk-sast-output.json ]; then
-              if grep -q '"runs"' snyk-sast-output.json 2>/dev/null; then
-                cp snyk-sast-output.json snyk-sast-report.json
-                echo "SAST report created from code test output"
-              else
-                echo "Converting SAST output to report format..."
-                python3 -c "
-import json
-import sys
+            npx snyk code test --severity-threshold=high --json-file-output=snyk-sast-report.json 2>&1 || true
+          fi
 
-try:
-    with open('snyk-sast-output.json', 'r') as f:
-        content = f.read().strip()
-    
-    if not content or not content.startswith('{'):
-        data = {'runs': [], 'version': '1.0.0'}
-    else:
-        try:
-            data = json.loads(content)
-            if 'runs' not in data:
-                data = {'runs': [data] if data else [], 'version': '1.0.0'}
-        except:
-            data = {'runs': [], 'version': '1.0.0'}
-    
-    with open('snyk-sast-report.json', 'w') as f:
-        json.dump(data, f, indent=2)
-    print('SAST report created successfully')
-except Exception as e:
-    print(f'Error: {e}')
-    with open('snyk-sast-report.json', 'w') as f:
-        json.dump({'runs': [], 'version': '1.0.0'}, f, indent=2)
-"
-              fi
-            else
-              echo "No SAST output, creating empty report"
-              echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
-            fi
-          else
+          if [ ! -f snyk-sast-report.json ] || [ ! -s snyk-sast-report.json ]; then
+            echo "Creating SAST report structure..."
             echo '{"runs": [], "version": "1.0.0"}' > snyk-sast-report.json
           fi
-          
-          if [ -f snyk-sast-report.json ]; then
-            echo "SAST report file exists:"
-            ls -lh snyk-sast-report.json
-            head -5 snyk-sast-report.json
-          fi
+
+          echo "SAST report status:"
+          ls -lh snyk-sast-report.json 2>/dev/null || echo "Report file not found"
         id: snyk-sast
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -119,7 +81,6 @@ except Exception as e:
             snyk-sca-report.json
           if-no-files-found: ignore
           retention-days: 30
-
 
   publish-reports:
     name: Publish Reports
