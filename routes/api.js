@@ -20,6 +20,11 @@ router.get('/data', async (req, res) => {
     const itemsData = await fs.readFile(itemsPath, 'utf8');
     const items = JSON.parse(itemsData);
 
+    if (!Array.isArray(items)) {
+      clearTimeout(timeout);
+      return res.status(500).json({ error: 'Invalid data format' });
+    }
+
     if (items.length > 1000) {
       clearTimeout(timeout);
       return res.status(413).json({ error: 'Data size exceeds limit' });
@@ -46,9 +51,14 @@ router.delete('/data/:id', async (req, res) => {
   }, 5000);
 
   try {
-    const itemId = parseInt(req.params.id);
+    if (!req.params || typeof req.params.id === 'undefined') {
+      clearTimeout(timeout);
+      return res.status(400).json({ error: 'ID parameter is required' });
+    }
 
-    if (isNaN(itemId)) {
+    const itemId = parseInt(req.params.id, 10);
+
+    if (isNaN(itemId) || !Number.isInteger(itemId) || itemId < 0) {
       clearTimeout(timeout);
       return res.status(400).json({ error: 'Invalid ID format' });
     }
@@ -56,6 +66,11 @@ router.delete('/data/:id', async (req, res) => {
     const itemsPath = path.join(__dirname, '../data/items.json');
     const itemsData = await fs.readFile(itemsPath, 'utf8');
     const items = JSON.parse(itemsData);
+
+    if (!Array.isArray(items)) {
+      clearTimeout(timeout);
+      return res.status(500).json({ error: 'Invalid data format' });
+    }
 
     if (items.length > 1000) {
       clearTimeout(timeout);

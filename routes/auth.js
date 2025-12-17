@@ -15,6 +15,11 @@ router.post('/login', async (req, res) => {
   }, 5000);
 
   try {
+    if (!req.body || typeof req.body !== 'object') {
+      clearTimeout(timeout);
+      return res.status(400).json({ error: 'Invalid request body' });
+    }
+
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -22,6 +27,11 @@ router.post('/login', async (req, res) => {
       return res
         .status(400)
         .json({ error: 'Username and password are required' });
+    }
+
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      clearTimeout(timeout);
+      return res.status(400).json({ error: 'Username and password must be strings' });
     }
 
     if (username.length > 100 || password.length > 100) {
