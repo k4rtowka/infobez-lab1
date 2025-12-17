@@ -1,11 +1,15 @@
+require('dotenv').config();
 const bcrypt = require('bcrypt');
 const fs = require('fs').promises;
 const path = require('path');
 
 async function setupUsers() {
   try {
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    const userPassword = await bcrypt.hash('user123', 10);
+    const adminPasswordEnv = process.env.ADMIN_PASSWORD || 'admin123';
+    const userPasswordEnv = process.env.USER_PASSWORD || 'user123';
+
+    const adminPassword = await bcrypt.hash(adminPasswordEnv, 10);
+    const userPassword = await bcrypt.hash(userPasswordEnv, 10);
 
     const users = [
       {
