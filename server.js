@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
+const { rateLimit } = require('./middleware/rateLimit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.disable('x-powered-by');
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(rateLimit(100, 60000));
 
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);

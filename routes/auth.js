@@ -12,15 +12,21 @@ router.post('/login', async (req, res) => {
     if (!res.headersSent) {
       res.status(503).json({ error: 'Request timeout' });
     }
-  }, 10000);
+  }, 5000);
 
   try {
     const { username, password } = req.body;
 
     if (!username || !password) {
+      clearTimeout(timeout);
       return res
         .status(400)
         .json({ error: 'Username and password are required' });
+    }
+
+    if (username.length > 100 || password.length > 100) {
+      clearTimeout(timeout);
+      return res.status(400).json({ error: 'Input size exceeds limit' });
     }
 
     const usersPath = path.join(__dirname, '../data/users.json');
@@ -29,11 +35,13 @@ router.post('/login', async (req, res) => {
 
     const user = users.find((u) => u.username === username);
     if (!user) {
+      clearTimeout(timeout);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
+      clearTimeout(timeout);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
