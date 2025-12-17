@@ -168,6 +168,10 @@ const isValid = await bcrypt.compare(password, hash);
 
 Для статического анализа кода используется `Snyk test`.
 
+![SAST Report](docs/SAST_report.png)
+
 ### SCA (Software Composition Analysis)
 
 Для проверки зависимостей на известные уязвимости используется `Snyk test`.
+
+![SAST Report](docs/SCA_report.png)
