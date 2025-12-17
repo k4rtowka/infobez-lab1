@@ -166,7 +166,7 @@ const isValid = await bcrypt.compare(password, hash);
 
 ### SAST (Static Application Security Testing)
 
-Для статического анализа кода используется `Snyk test`.
+Для статического анализа кода используется `Snyk code test`.
 
 ![SAST Report](docs/SAST_report.png)
 
