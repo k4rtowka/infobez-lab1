@@ -44,7 +44,7 @@ jobs:
                 echo "SAST report created from code test output"
               else
                 echo "Converting SAST output to report format..."
-                python3 << 'PYEOF'
+                python3 -c "
 import json
 import sys
 
@@ -52,24 +52,24 @@ try:
     with open('snyk-sast-output.json', 'r') as f:
         content = f.read().strip()
     
-    if not content or content.startswith('{') == False:
-        data = {"runs": [], "version": "1.0.0"}
+    if not content or not content.startswith('{'):
+        data = {'runs': [], 'version': '1.0.0'}
     else:
         try:
             data = json.loads(content)
-            if "runs" not in data:
-                data = {"runs": [data] if data else [], "version": "1.0.0"}
+            if 'runs' not in data:
+                data = {'runs': [data] if data else [], 'version': '1.0.0'}
         except:
-            data = {"runs": [], "version": "1.0.0"}
+            data = {'runs': [], 'version': '1.0.0'}
     
     with open('snyk-sast-report.json', 'w') as f:
         json.dump(data, f, indent=2)
-    print("SAST report created successfully")
+    print('SAST report created successfully')
 except Exception as e:
-    print(f"Error: {e}")
+    print(f'Error: {e}')
     with open('snyk-sast-report.json', 'w') as f:
-        json.dump({"runs": [], "version": "1.0.0"}, f, indent=2)
-PYEOF
+        json.dump({'runs': [], 'version': '1.0.0'}, f, indent=2)
+"
               fi
             else
               echo "No SAST output, creating empty report"
