@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const fs = require('fs').promises;
 const path = require('path');
@@ -7,7 +8,15 @@ const { JWT_SECRET } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+const fileOperationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: 'Too many file operations, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/login', fileOperationLimiter, async (req, res) => {
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
       res.status(503).json({ error: 'Request timeout' });
@@ -40,6 +49,13 @@ router.post('/login', async (req, res) => {
     }
 
     const usersPath = path.join(__dirname, '../data/users.json');
+    
+    const stats = await fs.stat(usersPath);
+    if (stats.size > 10 * 1024 * 1024) {
+      clearTimeout(timeout);
+      return res.status(413).json({ error: 'File size exceeds limit' });
+    }
+    
     const usersData = await fs.readFile(usersPath, 'utf8');
     const users = JSON.parse(usersData);
 

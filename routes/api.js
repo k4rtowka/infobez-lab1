@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs').promises;
 const path = require('path');
 const { authenticateToken } = require('../middleware/auth');
@@ -6,9 +7,17 @@ const { sanitizeObject } = require('../utils/sanitize');
 
 const router = express.Router();
 
+const fileOperationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: 'Too many file operations, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.use(authenticateToken);
 
-router.get('/data', async (req, res) => {
+router.get('/data', fileOperationLimiter, async (req, res) => {
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
       res.status(503).json({ error: 'Request timeout' });
@@ -17,6 +26,13 @@ router.get('/data', async (req, res) => {
 
   try {
     const itemsPath = path.join(__dirname, '../data/items.json');
+    
+    const stats = await fs.stat(itemsPath);
+    if (stats.size > 10 * 1024 * 1024) {
+      clearTimeout(timeout);
+      return res.status(413).json({ error: 'File size exceeds limit' });
+    }
+    
     const itemsData = await fs.readFile(itemsPath, 'utf8');
     const items = JSON.parse(itemsData);
 
@@ -43,7 +59,7 @@ router.get('/data', async (req, res) => {
   }
 });
 
-router.delete('/data/:id', async (req, res) => {
+router.delete('/data/:id', fileOperationLimiter, async (req, res) => {
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
       res.status(503).json({ error: 'Request timeout' });
@@ -64,6 +80,13 @@ router.delete('/data/:id', async (req, res) => {
     }
 
     const itemsPath = path.join(__dirname, '../data/items.json');
+    
+    const stats = await fs.stat(itemsPath);
+    if (stats.size > 10 * 1024 * 1024) {
+      clearTimeout(timeout);
+      return res.status(413).json({ error: 'File size exceeds limit' });
+    }
+    
     const itemsData = await fs.readFile(itemsPath, 'utf8');
     const items = JSON.parse(itemsData);
 
