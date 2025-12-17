@@ -8,6 +8,12 @@ const { JWT_SECRET } = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/login', async (req, res) => {
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(503).json({ error: 'Request timeout' });
+    }
+  }, 10000);
+
   try {
     const { username, password } = req.body;
 
@@ -40,11 +46,13 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    clearTimeout(timeout);
     res.json({
       message: 'Login successful',
       token: token,
     });
   } catch (error) {
+    clearTimeout(timeout);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

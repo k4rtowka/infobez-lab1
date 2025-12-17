@@ -9,6 +9,12 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get('/data', async (req, res) => {
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(503).json({ error: 'Request timeout' });
+    }
+  }, 10000);
+
   try {
     const itemsPath = path.join(__dirname, '../data/items.json');
     const itemsData = await fs.readFile(itemsPath, 'utf8');
@@ -16,16 +22,24 @@ router.get('/data', async (req, res) => {
 
     const sanitizedItems = sanitizeObject(items);
 
+    clearTimeout(timeout);
     res.json({
       message: 'Data retrieved successfully',
       data: sanitizedItems,
     });
   } catch (error) {
+    clearTimeout(timeout);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 router.delete('/data/:id', async (req, res) => {
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(503).json({ error: 'Request timeout' });
+    }
+  }, 10000);
+
   try {
     const itemId = parseInt(req.params.id);
 
@@ -50,11 +64,13 @@ router.delete('/data/:id', async (req, res) => {
 
     const sanitizedItem = sanitizeObject(deletedItem);
 
+    clearTimeout(timeout);
     res.json({
       message: 'Item deleted successfully',
       deletedItem: sanitizedItem,
     });
   } catch (error) {
+    clearTimeout(timeout);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
