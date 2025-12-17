@@ -31,12 +31,13 @@ jobs:
             npm install
           fi
 
-      - name: Run Snyk test (SAST)
+      - name: Run Snyk code test (SAST)
         continue-on-error: true
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
+          command: code test
           args: --severity-threshold=high --json-file-output=snyk-sast-report.json
         id: snyk-sast
         if: env.SNYK_TOKEN != ''
@@ -47,6 +48,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
+          command: test
           args: --severity-threshold=low --json-file-output=snyk-sca-report.json
         id: snyk-sca
         if: env.SNYK_TOKEN != ''
